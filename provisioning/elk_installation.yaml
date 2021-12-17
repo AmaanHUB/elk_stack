@@ -1,0 +1,158 @@
+---
+
+- name: Setting up ELK stack
+  hosts: all
+  vars:
+    openssl_passwd: testing
+    user: vagrant
+
+  # gather the state of the machine before running
+  gather_facts: yes
+# get root permissions
+  become: yes
+
+  tasks:
+    - name: Update and upgrade
+      apt:
+        upgrade: yes
+        update_cache: yes
+        cache_valid_time: 3600
+
+  ###### Elasticsearch Installation and Setup ######
+    - name: Getting Elasticsearch key from official servers
+      apt_key:
+        url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+        state: present
+  
+    - name: Add Elasticsearch repo to source list
+      apt_repository:
+        repo: deb https://artifacts.elastic.co/packages/7.x/apt stable main
+        state: present
+        filename: "elastic-7.x.list"
+        update_cache: yes
+
+    - name: Install Elasticsearch package
+      apt: 
+        pkg:
+          - elasticsearch
+        state: latest  
+
+    - name: Copy elasticsearch config to the relevant place
+      copy: 
+        src: /home/amaan/Documents/Jobs-And-Internships/Applications/Wandera/elk_stack/configs/elasticsearch/elasticsearch.yml
+        dest: /etc/elasticsearch/elasticsearch.yml
+        owner: root
+        group: elasticsearch
+
+    - name: Start and enable elasticsearch
+      service:
+        name: elasticsearch
+        state: started
+        enabled: yes
+
+    # run test to see if elasticsearch service running here
+
+  ###### Kibana Installation and Setup #####
+    - name: Install Kibana and Nginx
+      apt: 
+        pkg:
+          - kibana
+          - nginx
+        state: latest
+
+    - name: Start and enable Kibana
+      service:
+        name: kibana
+        state: started
+        enabled: yes
+
+    # # fix me OR IGNORE
+    # - name: Create kibana user and password
+    #   shell: "echo "kibanaadmin:`openssl passwd -apr1`" | sudo tee -a /etc/nginx/htpasswd.users"
+    - name: Check if nginx has already been set up
+      stat:
+        path: /etc/nginx/sites-enabled/nginx.conf
+      register: nginx
+
+    - name: Copy Nginx config
+      copy:
+        src: /home/amaan/Documents/Jobs-And-Internships/Applications/Wandera/elk_stack/configs/nginx/nginx.conf
+        dest: /etc/nginx/sites-available/default
+        owner: root
+        group: root
+
+    # - name: Enable nginx config
+    #   shell: sudo ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
+
+    - name: Reload Nginx
+      service:
+        name: nginx
+        state: reloaded
+
+    - name: Allow UFW rule for Nginx
+      shell: sudo ufw allow 'Nginx Full'
+
+    ##### Logstash Installation and Setup #####
+    - name: Install Logstash
+      apt: 
+        pkg:
+          - logstash
+        state: latest
+
+    - name: Copy Beats config
+      copy:
+        src: /home/amaan/Documents/Jobs-And-Internships/Applications/Wandera/elk_stack/configs/logstash/02-beats-input.conf
+        dest: /etc/logstash/conf.d/
+        owner: root
+        group: root
+
+    - name: Copy Elasticsearch config
+      copy:
+        src: /home/amaan/Documents/Jobs-And-Internships/Applications/Wandera/elk_stack/configs/logstash/30-elasticsearch-output.conf
+        dest: /etc/logstash/conf.d/
+        owner: root
+        group: root
+
+    - name: Test logstash config
+      shell: sudo -u logstash /usr/share/logstash/bin/logstash --path.settings /etc/logstash -t
+
+    - name: Start and enable Logstash
+      service:
+        name: logstash
+        state: started
+        enabled: yes
+
+    ##### Filebeat Installation and Setup #####
+    - name: Install Filebeat
+      apt: 
+        pkg:
+          - filebeat
+        state: latest
+
+    - name: Copy FileBeats config
+      copy:
+        src: /home/amaan/Documents/Jobs-And-Internships/Applications/Wandera/elk_stack/configs/filebeat/filebeat.yml
+        dest: /etc/filebeats/
+        owner: root
+        group: root
+
+    - name: Enable filebeat modules
+      shell: | 
+        filebeat modules enable system nginx 
+
+    - name: Filebeat load the ingest pipelines
+      shell: | 
+        filebeat setup --pipelines --modules system nginx
+
+    - name: Filebeat load the index template into filebeat
+      shell: | 
+        filebeat setup --index-management -E output.logstash.enabled=false -E 'output.elasticsearch.hosts=["localhost:9200"]'
+
+    - name: Start and enable Filebeat
+      service:
+        name: filebeat
+        state: started
+        enabled: yes
+
+    - name: Test Filebeat
+      shell: curl -XGET 'http://localhost:9200/filebeat-*/_search?pretty'
