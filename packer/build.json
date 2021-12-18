@@ -1,0 +1,13 @@
+{
+  "builders": [{
+	"ami_description": "ELK installation based on Ubuntu 20.04 LTS",
+	"source_ami": "ami-08ca3fed11864d6bb",
+	"instance_type": "t3.small",
+	"region": "eu-west-1",
+	"ssh_username": "ubuntu"
+	}],
+	"provisioners": [{
+	  "type": "ansible-local",
+	  "playbook-file": "../provisioning/elk_installation.yaml"
+	}]
+}
