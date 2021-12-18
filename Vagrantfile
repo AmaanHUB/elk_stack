@@ -27,8 +27,7 @@ Vagrant.configure("2") do |config|
       ansible.verbose = "v"
       ansible.playbook = "provisioning/elk_installation.yaml"
    end
-
-    end
+  end
 
   config.vm.provider "virtualbox" do |vb|
     # Display the VirtualBox GUI when booting the machine
