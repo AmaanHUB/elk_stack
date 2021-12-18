@@ -5,7 +5,6 @@ resource "aws_launch_configuration" "webnodes" {
   user_data       = <<EOF
     #!/bin/bash
     sudo apt install nginx
-    sudo ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
     sudo systemctl enable nginx --now
     EOF
 }
