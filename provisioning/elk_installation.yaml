@@ -5,6 +5,7 @@
   vars:
     openssl_passwd: testing
     user: vagrant
+    src: /home/amaan/Documents/Jobs-And-Internships/Applications/Wandera/elk_stack/
 
   # gather the state of the machine before running
   gather_facts: yes
@@ -39,7 +40,7 @@
 
     - name: Copy elasticsearch config to the relevant place
       copy: 
-        src: /home/amaan/Documents/Jobs-And-Internships/Applications/Wandera/elk_stack/configs/elasticsearch/elasticsearch.yml
+        src: "{{ src }}configs/elasticsearch/elasticsearch.yml"
         dest: /etc/elasticsearch/elasticsearch.yml
         owner: root
         group: elasticsearch
@@ -76,7 +77,7 @@
 
     - name: Copy Nginx config
       copy:
-        src: /home/amaan/Documents/Jobs-And-Internships/Applications/Wandera/elk_stack/configs/nginx/nginx.conf
+        src: "{{ src }}configs/nginx/nginx.conf"
         dest: /etc/nginx/sites-available/default
         owner: root
         group: root
@@ -101,14 +102,14 @@
 
     - name: Copy Beats config
       copy:
-        src: /home/amaan/Documents/Jobs-And-Internships/Applications/Wandera/elk_stack/configs/logstash/02-beats-input.conf
+        src: "{{ src }}configs/logstash/02-beats-input.conf"
         dest: /etc/logstash/conf.d/
         owner: root
         group: root
 
     - name: Copy Elasticsearch config
       copy:
-        src: /home/amaan/Documents/Jobs-And-Internships/Applications/Wandera/elk_stack/configs/logstash/30-elasticsearch-output.conf
+        src: "{{ src }}configs/logstash/30-elasticsearch-output.conf"
         dest: /etc/logstash/conf.d/
         owner: root
         group: root
@@ -131,7 +132,7 @@
 
     - name: Copy FileBeats config
       copy:
-        src: /home/amaan/Documents/Jobs-And-Internships/Applications/Wandera/elk_stack/configs/filebeat/filebeat.yml
+        src: "{{ src }}configs/filebeat/filebeat.yml"
         dest: /etc/filebeats/
         owner: root
         group: root
