@@ -28,6 +28,21 @@ resource "aws_autoscaling_group" "scalegroup" {
   depends_on = [aws_instance.elk]
 }
 
+resource "aws_autoscaling_policy" "autopolicy-up" {
+  name                   = "web-autopolicy-up"
+  scaling_adjustment     = 1
+  adjustment_type        = "ChangeInCapacity"
+  cooldown               = 60
+  autoscaling_group_name = aws_autoscaling_group.scalegroup.name
+}
+
+resource "aws_autoscaling_policy" "autopolicy-down" {
+  name                   = "web-autopolicy-down"
+  scaling_adjustment     = -1
+  adjustment_type        = "ChangeInCapacity"
+  cooldown               = 60
+  autoscaling_group_name = aws_autoscaling_group.scalegroup.name
+}
 # TG
 resource "aws_alb_target_group" "web" {
   name                 = "web-alb-tg"
