@@ -118,6 +118,7 @@ packer build ./packer/build.json
 The idea of this format was to have two subnets, with one having a generic web server running on them (normally would be a web app but I didn't have time to completely set one up) and another to run the ELK monitoring software, which would serve as a bastion instance. The web servers would run in an autoscaling group which would allow the number of instances to increase or decrease based upon demand.
 
 The ELK server would be running the ELK stack from a pre-built image, where the instances in the autoscaling group are just running the default nginx website that is being setup in the launch configuration.
+
 To run:
 
 ```sh
