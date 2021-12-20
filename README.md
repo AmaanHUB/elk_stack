@@ -86,21 +86,67 @@ I won't put the rest of the playbook here, since all the tasks have names which 
 
 ## AWS
 **This hasn't been tested as I don't have an AWS account with money on it**
-* Something extra would be the inclusion of installing metricbeats on webnodes
 * Would install and setup filebeats on the webnodes too
 
 The idea of the workflow of creating the cloud infrastructure, would be to create an image with all the ELK software configured and installed with Packer, which would then be specified and run with Terraform.
 
+To get this working, you would have to add your AWS_SECRET_ACCESS_KEY and AWS_ACCESS_KEY_ID (these are found on your AWS profile) to either your .bashrc (to be permanent) or export these environment variables to your terminal .e.g.:
+
+```sh
+export AWS_ACCESS_KEY_ID="<key here>"
+export AWS_SECRET_ACCESS_KEY="<key here>"
+```
 ### Packer
 
-Packer also calls the ansible playbook that the VMs use on the local machine. Some changes would need to be done to the playbook so that it can include the installation and setup of MetricBeats (get the metrics of EC2 instances and doesn't need to be installed on all instances).
+Packer also calls the ansible playbook that the VMs use on the local machine. Some changes would need to be done to the playbook so that it can include the installation and setup of MetricBeats (get the metrics of EC2 instances and doesn't need to be installed on all instances); the metricbeats changes would be done in a further iteration.
 
 If you want to run your infrastructure in another region, then you'll want your AMIs (Amazon Machine Images, which is what Packer builds) in the same region, so you'll need to change the following line to the correct region:
 ```json
 	"region": "eu-west-1",
 ```
 
+It should be noted that packer files can be written in json or hcl2, though I stuck to json since I find it easier to read and I don't need any of the advanced features in hcl2.
+
+To run the packer build process, run:
+```sh
+packer validate ./packer/build.json
+packer build ./packer/build.json
+```
+
 ### Terraform
+
+The idea of this format was to have two subnets, with one having a generic web server running on them (normally would be a web app but I didn't have time to completely set one up) and another to run the ELK monitoring software, which would serve as a bastion instance. The web servers would run in an autoscaling group which would allow the number of instances to increase or decrease based upon demand.
+
+The ELK server would be running the ELK stack from a pre-built image, where the instances in the autoscaling group are just running the default nginx website that is being setup in the launch configuration.
+To run:
+
+```sh
+cd terraform/
+
+# initialise terraform and load any modules
+terraform init
+terraform plan
+terraform apply
+```
+Includes:
+* network.tf: 
+  * VPC
+  * IGW
+  * 2 route tables and routes
+  * 2 subnets (one for web instances and one for ELK instance which can act as bastion)
+  * 2 EIP
+  * NAT
+* security.tf:
+  * 2 security groups (for ELK and web instance)
+    * more planned for loadbalancer
+  * NACLs planned
+* elk_instance.tf:
+  * EC2 instance using AMI with ELK image
+* web.tf:
+  * launch configuration
+  * autoscaling group
+  * target group
+  * load balancer (and associated listener)
 
 ## Iteration
 * [ ] Separate the Vagrantfile to create two machines to be closer to the end product on AWS
